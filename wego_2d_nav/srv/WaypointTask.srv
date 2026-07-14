@@ -1,0 +1,12 @@
+int8 ONE_GO=1
+int8 TWO_GO=2
+int8 THREE_GO=3
+int8 FOUR_GO=4
+int8 FIVE_GO=5
+int8 CANCEL=6
+int8 PAUSE=7
+int8 CONTINUE=8
+
+int8 scene
+---
+bool respond

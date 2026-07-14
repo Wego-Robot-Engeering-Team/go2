@@ -1,0 +1,39 @@
+<?xml version="1.0"?>
+<?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
+<package format="3">
+  <name>wego</name>
+  <version>0.0.0</version>
+  <description>TODO: Package description</description>
+  <maintainer email="changmin5941@gmail.com">wego</maintainer>
+  <license>TODO: License declaration</license>
+
+  <buildtool_depend>ament_cmake</buildtool_depend>
+
+  <test_depend>ament_lint_auto</test_depend>
+  <test_depend>ament_lint_common</test_depend>
+
+  <depend>rclcpp</depend>
+  <depend>sensor_msgs</depend>
+  <depend>tf2</depend>
+  <depend>tf2_ros</depend>
+  <depend>tf2_sensor_msgs</depend>
+  <depend>message_filters</depend>
+  <depend>pcl_conversions</depend>
+  <depend>laser_filters</depend>
+  <depend>apriltag_ros</depend>
+  <depend>realsense2_camera</depend>
+  <exec_depend>aurora_test</exec_depend>
+  <exec_depend>launch</exec_depend>
+  <exec_depend>launch_ros</exec_depend>
+  <exec_depend>nav2_common</exec_depend>
+  <exec_depend>pointcloud_to_laserscan</exec_depend>
+  <exec_depend>rviz2</exec_depend>
+  <exec_depend>slamware_ros_sdk</exec_depend>
+  <exec_depend>wego_2d_nav</exec_depend>
+
+  <exec_depend>libpcl-dev</exec_depend>
+
+  <export>
+    <build_type>ament_cmake</build_type>
+  </export>
+</package>

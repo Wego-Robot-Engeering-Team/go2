@@ -1,0 +1,12 @@
+waypoint_save:
+  ros__parameters:
+    tf_timeout: 0.2
+    waypoint_file: /home/wego/waypoints/waypoint.csv
+
+waypoint_runner:
+  ros__parameters:
+    waypoint_1_file_path: /home/wego/waypoints/waypoint_one.csv
+    waypoint_2_file_path: /home/wego/waypoints/waypoint_two.csv
+    waypoint_3_file_path: /home/wego/waypoints/waypoint_three.csv
+    waypoint_4_file_path: /home/wego/waypoints/waypoint_four.csv
+    waypoint_5_file_path: /home/wego/waypoints/waypoint_five.csv
