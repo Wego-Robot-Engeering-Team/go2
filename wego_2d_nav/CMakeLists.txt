@@ -24,8 +24,6 @@ rosidl_generate_interfaces(${PROJECT_NAME}
   DEPENDENCIES
 )
 
-rosidl_get_typesupport_target(cpp_typesupport_target "${PROJECT_NAME}" "rosidl_typesupport_cpp")
-
 add_executable(waypoint_follow ./src/waypoint_follow.cpp ./include/wego_2d_nav/waypoint_follow.hpp)
 ament_target_dependencies(waypoint_follow 
   rclcpp
@@ -53,7 +51,8 @@ ament_target_dependencies(waypoint_runner
                           std_msgs
                           std_srvs
                           )
-target_link_libraries(waypoint_runner "${cpp_typesupport_target}")
+# rosidl_get_typesupport_target() is not available in ROS 2 Foxy.
+rosidl_target_interfaces(waypoint_runner ${PROJECT_NAME} "rosidl_typesupport_cpp")
 
 install(TARGETS
   waypoint_save
@@ -62,8 +61,26 @@ install(TARGETS
   DESTINATION lib/${PROJECT_NAME}
 )
 
-install(DIRECTORY launch maps config
+install(DIRECTORY maps
   DESTINATION share/${PROJECT_NAME}
 )
+
+# Install only the Foxy-compatible Nav2 launch and configuration files.
+# This excludes archived Humble-era copies and the unsupported speed-filter
+# configuration from the installed package.
+install(FILES
+  launch/localization_launch.py
+  launch/navigation_launch.py
+  launch/waypoint_follower_launch.py
+  DESTINATION share/${PROJECT_NAME}/launch
+)
+
+install(FILES
+  config/nav2_params.yaml
+  config/waypoint.yaml
+  DESTINATION share/${PROJECT_NAME}/config
+)
+
+ament_export_dependencies(rosidl_default_runtime)
 
 ament_package()

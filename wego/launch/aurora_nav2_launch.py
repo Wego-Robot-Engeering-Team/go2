@@ -44,7 +44,6 @@ def generate_launch_description():
     map_yaml = LaunchConfiguration("map")
     params_file = LaunchConfiguration("params_file")
     autostart = LaunchConfiguration("autostart")
-    use_respawn = LaunchConfiguration("use_respawn")
     log_level = LaunchConfiguration("log_level")
     gui_nav = LaunchConfiguration("gui_nav")
     use_native_scan = LaunchConfiguration("use_native_scan")
@@ -104,21 +103,14 @@ def generate_launch_description():
         executable="static_transform_publisher",
         name="aurora_base_to_base_link",
         arguments=[
-            "--x",
             "0.0",
-            "--y",
             "0.0",
-            "--z",
             "0.0",
-            "--yaw",
             "0.0",
-            "--pitch",
             "0.0",
-            "--roll",
             "0.0",
-            "--frame-id",
+            "0.0",
             "aurora_base",
-            "--child-frame-id",
             "base_link",
         ],
     )
@@ -168,7 +160,6 @@ def generate_launch_description():
             "map": map_yaml,
             "params_file": configured_params,
             "autostart": autostart,
-            "use_respawn": use_respawn,
             "log_level": log_level,
             "gui_nav": gui_nav,
         }.items(),
@@ -184,7 +175,6 @@ def generate_launch_description():
                 default_value=os.path.join(wego_nav_share, "config", "nav2_params.yaml"),
             ),
             DeclareLaunchArgument("autostart", default_value="true"),
-            DeclareLaunchArgument("use_respawn", default_value="False"),
             DeclareLaunchArgument("log_level", default_value="fatal"),
             DeclareLaunchArgument("gui_nav", default_value="true"),
             DeclareLaunchArgument("use_native_scan", default_value="false"),

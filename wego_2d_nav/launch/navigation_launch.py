@@ -1,3 +1,5 @@
+"""Foxy-compatible Nav2 navigation server launch file."""
+
 import os
 
 from ament_index_python.packages import get_package_share_directory
@@ -5,115 +7,112 @@ from ament_index_python.packages import get_package_share_directory
 from launch import LaunchDescription
 from launch.actions import DeclareLaunchArgument, SetEnvironmentVariable
 from launch.substitutions import LaunchConfiguration
-from launch_ros.actions import LoadComposableNodes
-from launch_ros.descriptions import ComposableNode
+from launch_ros.actions import Node
+from nav2_common.launch import RewrittenYaml
+
 
 def generate_launch_description():
-    # Get the launch directory
     bringup_dir = get_package_share_directory('wego_2d_nav')
 
     autostart = LaunchConfiguration('autostart')
     params_file = LaunchConfiguration('params_file')
-    container_name = LaunchConfiguration('container_name')
-    
-    lifecycle_nodes = ['controller_server',
-                       'smoother_server',
-                       'planner_server',
-                       'behavior_server',
-                       'bt_navigator',
-                       'waypoint_follower',
-                       'velocity_smoother']
+    default_bt_xml_filename = LaunchConfiguration('default_bt_xml_filename')
+    log_level = LaunchConfiguration('log_level')
 
-    remappings = [('/tf', 'tf'),
-                  ('/tf_static', 'tf_static')]
+    # Nav2 Foxy uses recoveries_server.  SmootherServer, BehaviorServer, and
+    # VelocitySmoother were introduced in later Nav2 releases.
+    lifecycle_nodes = [
+        'controller_server',
+        'planner_server',
+        'recoveries_server',
+        'bt_navigator',
+        'waypoint_follower',
+    ]
 
-    stdout_linebuf_envvar = SetEnvironmentVariable(
-        'RCUTILS_LOGGING_BUFFERED_STREAM', '1')
+    remappings = [
+        ('/tf', 'tf'),
+        ('/tf_static', 'tf_static'),
+    ]
 
-    declare_params_file_cmd = DeclareLaunchArgument(
-        'params_file',
-        default_value=os.path.join(bringup_dir, 'config', 'nav2_params.yaml'),
-        description='Full path to the ROS2 parameters file to use for all launched nodes')
-
-    declare_autostart_cmd = DeclareLaunchArgument(
-        'autostart', default_value='true',
-        description='Automatically startup the nav2 stack')
-
-    declare_container_name_cmd = DeclareLaunchArgument(
-        'container_name', default_value='nav2_container',
-        description='the name of conatiner that nodes will load in if use composition')
-
-    declare_log_level_cmd = DeclareLaunchArgument(
-        'log_level', default_value='info',
-        description='log level')
-
-
-    load_composable_nodes = LoadComposableNodes(
-        target_container=container_name,
-        composable_node_descriptions=[
-            ComposableNode(
-                package='nav2_controller',
-                plugin='nav2_controller::ControllerServer',
-                name='controller_server',
-                parameters=[params_file],
-                remappings=remappings + [('cmd_vel', 'cmd_vel_nav_raw')]),
-            ComposableNode(
-                package='nav2_smoother',
-                plugin='nav2_smoother::SmootherServer',
-                name='smoother_server',
-                parameters=[params_file],
-                remappings=remappings),
-            ComposableNode(
-                package='nav2_planner',
-                plugin='nav2_planner::PlannerServer',
-                name='planner_server',
-                parameters=[params_file],
-                remappings=remappings),
-            ComposableNode(
-                package='nav2_behaviors',
-                plugin='behavior_server::BehaviorServer',
-                name='behavior_server',
-                parameters=[params_file],
-                remappings=remappings + [('cmd_vel', 'cmd_vel_nav_raw')]),
-            ComposableNode(
-                package='nav2_bt_navigator',
-                plugin='nav2_bt_navigator::BtNavigator',
-                name='bt_navigator',
-                parameters=[params_file],
-                remappings=remappings),
-            ComposableNode(
-                package='nav2_waypoint_follower',
-                plugin='nav2_waypoint_follower::WaypointFollower',
-                name='waypoint_follower',
-                parameters=[params_file],
-                remappings=remappings),
-            ComposableNode(
-                package='nav2_velocity_smoother',
-                plugin='nav2_velocity_smoother::VelocitySmoother',
-                name='velocity_smoother',
-                parameters=[params_file],
-                remappings=remappings +
-                           [('cmd_vel', 'cmd_vel_nav_raw'), ('cmd_vel_smoothed', 'cmd_vel')]),
-            ComposableNode(
-                package='nav2_lifecycle_manager',
-                plugin='nav2_lifecycle_manager::LifecycleManager',
-                name='lifecycle_manager_navigation',
-                parameters=[{'autostart': autostart,
-                             'node_names': lifecycle_nodes}]),
-        ],
+    configured_params = RewrittenYaml(
+        source_file=params_file,
+        param_rewrites={
+            'default_bt_xml_filename': default_bt_xml_filename,
+        },
+        convert_types=True,
     )
 
-    # Create the launch description and populate
-    ld = LaunchDescription()
+    node_arguments = ['--ros-args', '--log-level', log_level]
 
-    # Set environment variables
-    ld.add_action(stdout_linebuf_envvar)
-    ld.add_action(declare_params_file_cmd)
-    ld.add_action(declare_autostart_cmd)
-    ld.add_action(declare_container_name_cmd)
-    ld.add_action(declare_log_level_cmd)
-
-    # Add the actions to launch all of the navigation nodes
-    ld.add_action(load_composable_nodes)
-
-    return ld
+    return LaunchDescription([
+        SetEnvironmentVariable('RCUTILS_LOGGING_BUFFERED_STREAM', '1'),
+        DeclareLaunchArgument(
+            'params_file',
+            default_value=os.path.join(bringup_dir, 'config', 'nav2_params.yaml'),
+            description='Full path to the Nav2 parameter file.'),
+        DeclareLaunchArgument(
+            'autostart',
+            default_value='true',
+            description='Automatically start the Nav2 lifecycle nodes.'),
+        DeclareLaunchArgument(
+            'default_bt_xml_filename',
+            default_value=os.path.join(
+                get_package_share_directory('nav2_bt_navigator'),
+                'behavior_trees',
+                'navigate_w_replanning_and_recovery.xml'),
+            description='Foxy Nav2 behavior tree XML file.'),
+        DeclareLaunchArgument(
+            'log_level',
+            default_value='info',
+            description='Log level for Nav2 nodes.'),
+        Node(
+            package='nav2_controller',
+            executable='controller_server',
+            name='controller_server',
+            output='screen',
+            parameters=[configured_params],
+            remappings=remappings,
+            arguments=node_arguments),
+        Node(
+            package='nav2_planner',
+            executable='planner_server',
+            name='planner_server',
+            output='screen',
+            parameters=[configured_params],
+            remappings=remappings,
+            arguments=node_arguments),
+        Node(
+            package='nav2_recoveries',
+            executable='recoveries_server',
+            name='recoveries_server',
+            output='screen',
+            parameters=[configured_params],
+            remappings=remappings,
+            arguments=node_arguments),
+        Node(
+            package='nav2_bt_navigator',
+            executable='bt_navigator',
+            name='bt_navigator',
+            output='screen',
+            parameters=[configured_params],
+            remappings=remappings,
+            arguments=node_arguments),
+        Node(
+            package='nav2_waypoint_follower',
+            executable='waypoint_follower',
+            name='waypoint_follower',
+            output='screen',
+            parameters=[configured_params],
+            remappings=remappings,
+            arguments=node_arguments),
+        Node(
+            package='nav2_lifecycle_manager',
+            executable='lifecycle_manager',
+            name='lifecycle_manager_navigation',
+            output='screen',
+            parameters=[
+                {'autostart': autostart},
+                {'node_names': lifecycle_nodes},
+            ],
+            arguments=node_arguments),
+    ])

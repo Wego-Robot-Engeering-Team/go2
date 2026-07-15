@@ -7,11 +7,8 @@ from launch.actions import (DeclareLaunchArgument, GroupAction,
                             IncludeLaunchDescription, SetEnvironmentVariable)
 from launch.conditions import IfCondition
 from launch.launch_description_sources import PythonLaunchDescriptionSource
-from launch.substitutions import LaunchConfiguration, PythonExpression
+from launch.substitutions import LaunchConfiguration
 from launch_ros.actions import Node
-from launch_ros.actions import PushRosNamespace
-from launch_ros.descriptions import ParameterFile
-from nav2_common.launch import ReplaceString, RewrittenYaml
 
 
 def generate_launch_description():
@@ -21,16 +18,9 @@ def generate_launch_description():
 
     map_yaml_file = LaunchConfiguration('map')
     params_file = LaunchConfiguration('params_file')
-    map_mask_yaml_file = LaunchConfiguration('map_mask')
-    mask_params_file = LaunchConfiguration('mask_params_file')
     autostart = LaunchConfiguration('autostart')
-    use_respawn = LaunchConfiguration('use_respawn')
     log_level = LaunchConfiguration('log_level')
 
-    remappings = [('/tf', 'tf'),
-                  ('/tf_static', 'tf_static')]
-
-    
     gui_arg = DeclareLaunchArgument(
         'gui_nav',
         default_value='true',
@@ -65,56 +55,30 @@ def generate_launch_description():
         default_value=os.path.join(bringup_dir, 'config', 'nav2_params.yaml'),
         description='Full path to the ROS2 parameters file to use for all launched nodes')
 
-    declare_map_mask_yaml_cmd = DeclareLaunchArgument(
-        'map_mask',
-        default_value=os.path.join(bringup_dir, 'maps', 'map_speed_mask.yaml'),
-        description='Full path to map yaml file to load')
-
-    declare_mask_param_file_cmd = DeclareLaunchArgument(
-        'mask_params_file',
-        default_value=os.path.join(bringup_dir, 'config', 'speed_params.yaml'),
-        description='Full path to the ROS2 parameters file to use for all launched nodes')
-
     declare_autostart_cmd = DeclareLaunchArgument(
         'autostart', default_value='true',
         description='Automatically startup the nav2 stack')
-
-    declare_use_respawn_cmd = DeclareLaunchArgument(
-        'use_respawn', default_value='False',
-        description='Whether to respawn if a node crashes. Applied when composition is disabled.')
 
     declare_log_level_cmd = DeclareLaunchArgument(
         'log_level', default_value='fatal',
         description='log level')
 
-    # Specify the actions
+    # Foxy Nav2 launches standalone nodes.  Later Nav2 releases use the
+    # composable-node container that this package previously started here.
     bringup_cmd_group = GroupAction([
-        Node(
-            name='nav2_container',
-            package='rclcpp_components',
-            executable='component_container_isolated',
-            parameters=[params_file, {'autostart': autostart}],
-            arguments=['--ros-args', '--log-level', log_level],
-            remappings=remappings,
-            output='screen'),
-
         IncludeLaunchDescription(
             PythonLaunchDescriptionSource(os.path.join(launch_dir,
                                                        'localization_launch.py')),
             launch_arguments={'map': map_yaml_file,
-                              'map_mask': map_mask_yaml_file,
-                              'mask_params_file':  mask_params_file,
                               'autostart': autostart,
                               'params_file': params_file,
-                              'use_respawn': use_respawn,
-                              'container_name': 'nav2_container'}.items()),
+                              'log_level': log_level}.items()),
 
         IncludeLaunchDescription(
             PythonLaunchDescriptionSource(os.path.join(launch_dir, 'navigation_launch.py')),
             launch_arguments={'autostart': autostart,
                               'params_file': params_file,
-                              'use_respawn': use_respawn,
-                              'container_name': 'nav2_container'}.items()),
+                              'log_level': log_level}.items()),
     ])
 
     # Create the launch description and populate
@@ -129,10 +93,7 @@ def generate_launch_description():
     # Declare the launch options
     ld.add_action(declare_map_yaml_cmd)
     ld.add_action(declare_params_file_cmd)
-    ld.add_action(declare_mask_param_file_cmd)
-    ld.add_action(declare_map_mask_yaml_cmd)
     ld.add_action(declare_autostart_cmd)
-    ld.add_action(declare_use_respawn_cmd)
     ld.add_action(declare_log_level_cmd)
 
     # Add the actions to launch all of the navigation nodes
