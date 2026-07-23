@@ -55,7 +55,7 @@ ros2 run nav2_map_server map_saver_cli -f <저장할_경로/맵_파일_이름>
 예시:
 
 ```bash
-ros2 run nav2_map_server map_saver_cli -f ~/wego_ws/src/go2-foxy/wego_2d_nav/maps/my_map
+ros2 run nav2_map_server map_saver_cli -f ~/wego_ws/src/go2/wego_2d_nav/maps/my_map
 ```
 
 ## 4. 저장한 맵 불러오기 설정
@@ -63,7 +63,7 @@ ros2 run nav2_map_server map_saver_cli -f ~/wego_ws/src/go2-foxy/wego_2d_nav/map
 맵을 저장한 뒤 Navigation에서 해당 맵을 불러오기 위해 아래 파일을 수정합니다.
 
 ```text
-~/wego_ws/src/go2-foxy/wego/launch/nav2_bringup_launch.py
+~/wego_ws/src/go2/wego/launch/nav2_bringup_launch.py
 ```
 
 수정 위치:
@@ -94,7 +94,7 @@ gimp <맵_경로/맵_파일_이름.pgm>
 예시:
 
 ```bash
-gimp ~/wego_ws/src/go2-foxy/wego_2d_nav/maps/my_map.pgm
+gimp ~/wego_ws/src/go2/wego_2d_nav/maps/my_map.pgm
 ```
 
 ## 6. Navigation 실행
@@ -146,7 +146,7 @@ ros2 launch wego slam_launch.py
 4. 새 터미널에서 맵을 저장합니다.
 
 ```bash
-ros2 run nav2_map_server map_saver_cli -f ~/wego_ws/src/go2-foxy/wego_2d_nav/maps/my_map
+ros2 run nav2_map_server map_saver_cli -f ~/wego_ws/src/go2/wego_2d_nav/maps/my_map
 ```
 
 5. `nav2_bringup_launch.py`에서 사용할 맵 이름을 수정합니다.
