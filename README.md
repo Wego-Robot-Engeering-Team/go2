@@ -1,7 +1,5 @@
 # 광주 과학관 SLAM & Navigation 매뉴얼
 
-작성 일시: 2026-07-23 09:45 KST
-
 ## 1. NoMachine 연결 방법
 
 NoMachine은 원격 접속을 위해 사용하는 프로그램입니다.  
@@ -78,6 +76,13 @@ line 54
 
 예를 들어 저장한 맵 이름이 `my_map`이라면 `map1` 대신 `my_map`을 사용합니다.
 
+코드를 수정한 뒤에는 워크스페이스에서 빌드를 진행해야 변경 사항이 적용됩니다.
+
+```bash
+cd ~/wego_ws
+colcon build --symlink-install
+```
+
 ## 5. SLAM 맵 편집
 
 맵 편집은 GIMP 툴로 진행합니다.
@@ -145,11 +150,18 @@ ros2 run nav2_map_server map_saver_cli -f ~/wego_ws/src/go2-foxy/wego_2d_nav/map
 ```
 
 5. `nav2_bringup_launch.py`에서 사용할 맵 이름을 수정합니다.
-6. 필요하면 GIMP로 `.pgm` 맵을 편집합니다.
-7. Navigation을 실행합니다.
+6. 워크스페이스에서 빌드합니다.
+
+```bash
+cd ~/wego_ws
+colcon build --symlink-install
+```
+
+7. 필요하면 GIMP로 `.pgm` 맵을 편집합니다.
+8. Navigation을 실행합니다.
 
 ```bash
 ros2 launch wego nav2_bringup_launch.py
 ```
 
-8. RViz에서 초기 위치, 방향, 목표 지점을 지정해 주행합니다.
+9. RViz에서 초기 위치, 방향, 목표 지점을 지정해 주행합니다.
