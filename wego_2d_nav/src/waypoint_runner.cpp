@@ -11,6 +11,7 @@
 #include <std_srvs/srv/empty.hpp>  // (optional) costmap clear
 
 #include <fstream>
+#include <future>
 #include <sstream>
 #include <string>
 #include <vector>
@@ -337,8 +338,10 @@ private:
   }
 
   // ===== 액션 콜백 =====
-  void goalResponseCallback(GoalHandleWaypointFollow::SharedPtr goal_handle)
+  void goalResponseCallback(
+    std::shared_future<GoalHandleWaypointFollow::SharedPtr> goal_handle_future)
   {
+    const auto goal_handle = goal_handle_future.get();
     std_msgs::msg::UInt8 fed;
     if (!goal_handle) {
       RCLCPP_WARN(get_logger(), "Goal was rejected by server");

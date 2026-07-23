@@ -11,10 +11,10 @@ amcl:
     alpha3: 0.02
     alpha4: 0.006
     alpha5: 0.02
-    base_frame_id: "base_link"
+    base_frame_id: "base_footprint"
     global_frame_id: "map"
-    odom_frame_id: "aurora_odom"
-    robot_model_type: "omnidirectional"
+    odom_frame_id: "odom"
+    robot_model_type: "differential"
     laser_model_type: "likelihood_field_prob"
     max_beams: 30
     laser_max_range: 30.0
@@ -35,14 +35,14 @@ amcl:
     resample_interval: 1
     save_pose_rate: 0.5
     tf_broadcast: true
-    transform_tolerance: 0.3
+    transform_tolerance: 1.0
     update_min_a: 0.05
     update_min_d: 0.05
     z_hit: 0.5
     z_max: 0.03
     z_rand: 0.4
     z_short: 0.07
-    scan_topic: "scan_filtered"
+    scan_topic: "/scan_filtered"
 
 amcl_map_client:
   ros__parameters:
@@ -56,7 +56,7 @@ bt_navigator:
   ros__parameters:
     use_sim_time: false
     global_frame: "map"
-    robot_base_frame: "base_link"
+    robot_base_frame: "base_footprint"
     odom_topic: "/odom"
     enable_groot_monitoring: false
     groot_zmq_publisher_port: 1666
@@ -94,7 +94,7 @@ bt_navigator_rclcpp_node:
 controller_server:
   ros__parameters:
     use_sim_time: false
-    controller_frequency: 20.0
+    controller_frequency: 10.0
     min_x_velocity_threshold: 0.01
     min_y_velocity_threshold: 0.01
     min_theta_velocity_threshold: 0.1
@@ -113,47 +113,33 @@ controller_server:
       yaw_goal_tolerance: 0.2
       stateful: true
 
-    # DWB is the controller included with Nav2 Foxy.  These limits retain the
-    # original forward, reverse, and lateral velocity envelope.
+    # Regulated Pure Pursuit is simpler and lighter than sampling controllers.
+    # It commands forward velocity and yaw; it does not use lateral velocity.
     FollowPath:
-      plugin: "dwb_core::DWBLocalPlanner"
-      debug_trajectory_details: false
-      min_vel_x: -0.5
-      min_vel_y: -0.2
-      max_vel_x: 0.5
-      max_vel_y: 0.2
-      max_vel_theta: 1.0
-      min_speed_xy: 0.0
-      max_speed_xy: 0.5
-      min_speed_theta: 0.0
-      acc_lim_x: 2.5
-      acc_lim_y: 2.5
-      acc_lim_theta: 3.2
-      decel_lim_x: -2.5
-      decel_lim_y: -2.5
-      decel_lim_theta: -3.2
-      vx_samples: 20
-      vy_samples: 10
-      vtheta_samples: 20
-      sim_time: 1.7
-      linear_granularity: 0.05
-      angular_granularity: 0.025
-      transform_tolerance: 0.2
-      xy_goal_tolerance: 0.3
-      trans_stopped_velocity: 0.1
-      short_circuit_trajectory_evaluation: true
-      stateful: true
-      critics: ["RotateToGoal", "Oscillation", "BaseObstacle", "GoalAlign", "PathAlign", "PathDist", "GoalDist"]
-      BaseObstacle.scale: 0.02
-      PathAlign.scale: 32.0
-      PathAlign.forward_point_distance: 0.1
-      GoalAlign.scale: 24.0
-      GoalAlign.forward_point_distance: 0.1
-      PathDist.scale: 32.0
-      GoalDist.scale: 24.0
-      RotateToGoal.scale: 32.0
-      RotateToGoal.slowing_factor: 5.0
-      RotateToGoal.lookahead_time: -1.0
+      plugin: "nav2_regulated_pure_pursuit_controller::RegulatedPurePursuitController"
+      desired_linear_vel: 0.8
+      max_linear_accel: 1.2
+      max_linear_decel: 1.2
+      lookahead_dist: 0.8
+      min_lookahead_dist: 0.3
+      max_lookahead_dist: 0.9
+      lookahead_time: 1.5
+      use_velocity_scaled_lookahead_dist: true
+      transform_tolerance: 0.8
+      min_approach_linear_velocity: 0.3
+      use_approach_linear_velocity_scaling: false
+      max_allowed_time_to_collision: 1.0
+      use_regulated_linear_velocity_scaling: true
+      use_cost_regulated_linear_velocity_scaling: false
+      cost_scaling_dist: 0.3
+      cost_scaling_gain: 1.0
+      inflation_cost_scaling_factor: 1.8
+      regulated_linear_scaling_min_radius: 0.6
+      regulated_linear_scaling_min_speed: 0.3
+      use_rotate_to_heading: true
+      rotate_to_heading_min_angle: 0.2
+      rotate_to_heading_angular_vel: 2.0
+      max_angular_accel: 10.0
 
 controller_server_rclcpp_node:
   ros__parameters:
@@ -162,14 +148,15 @@ controller_server_rclcpp_node:
 local_costmap:
   local_costmap:
     ros__parameters:
-      update_frequency: 10.0
-      publish_frequency: 10.0
-      global_frame: "aurora_odom"
-      robot_base_frame: "base_link"
+      update_frequency: 5.0
+      publish_frequency: 1.0
+      global_frame: "odom"
+      robot_base_frame: "base_footprint"
       use_sim_time: false
+      transform_tolerance: 0.8
       rolling_window: true
-      width: 3.0
-      height: 3.0
+      width: 3
+      height: 3
       resolution: 0.05
       footprint: "[[0.43, 0.17], [0.43, -0.17], [-0.37, -0.17], [-0.37, 0.17]]"
       footprint_padding: 0.01
@@ -191,7 +178,7 @@ local_costmap:
       inflation_layer:
         plugin: "nav2_costmap_2d::InflationLayer"
         cost_scaling_factor: 1.8
-        inflation_radius: 0.35
+        inflation_radius: 0.25
       always_send_full_costmap: true
   local_costmap_client:
     ros__parameters:
@@ -206,8 +193,9 @@ global_costmap:
       update_frequency: 1.0
       publish_frequency: 1.0
       global_frame: "map"
-      robot_base_frame: "base_link"
+      robot_base_frame: "base_footprint"
       use_sim_time: false
+      transform_tolerance: 0.8
       footprint: "[[0.43, 0.17], [0.43, -0.17], [-0.32, -0.17], [-0.32, 0.17]]"
       footprint_padding: 0.01
       resolution: 0.05
@@ -233,7 +221,7 @@ global_costmap:
       inflation_layer:
         plugin: "nav2_costmap_2d::InflationLayer"
         cost_scaling_factor: 3.0
-        inflation_radius: 0.45
+        inflation_radius: 0.35
       always_send_full_costmap: true
   global_costmap_client:
     ros__parameters:
@@ -284,13 +272,13 @@ recoveries_server:
       plugin: "nav2_recoveries/BackUp"
     wait:
       plugin: "nav2_recoveries/Wait"
-    global_frame: "aurora_odom"
-    robot_base_frame: "base_link"
-    transform_timeout: 0.1
+    global_frame: "odom"
+    robot_base_frame: "base_footprint"
+    transform_timeout: 0.5
     simulate_ahead_time: 2.0
-    max_rotational_vel: 0.4
-    min_rotational_vel: 0.2
-    rotational_acc_lim: 1.0
+    max_rotational_vel: 2.0
+    min_rotational_vel: 1.3
+    rotational_acc_lim: 10.0
 
 waypoint_follower:
   ros__parameters:

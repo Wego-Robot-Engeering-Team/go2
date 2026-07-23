@@ -102,7 +102,7 @@ int main(int argc, char** argv) {
   auto node = std::make_shared<Go2Driver>();
   RCLCPP_INFO(logger, "[Go2] Go2Driver constructed.");
 
-  rclcpp::executors::MultiThreadedExecutor executor;
+  rclcpp::executors::MultiThreadedExecutor executor(rclcpp::ExecutorOptions(), 4);
   executor.add_node(node);
   executor.spin();
   rclcpp::shutdown();

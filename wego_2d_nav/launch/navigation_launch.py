@@ -57,9 +57,9 @@ def generate_launch_description():
         DeclareLaunchArgument(
             'default_bt_xml_filename',
             default_value=os.path.join(
-                get_package_share_directory('nav2_bt_navigator'),
+                bringup_dir,
                 'behavior_trees',
-                'navigate_w_replanning_and_recovery.xml'),
+                'navigate_w_replanning_and_recovery_wego.xml'),
             description='Foxy Nav2 behavior tree XML file.'),
         DeclareLaunchArgument(
             'log_level',

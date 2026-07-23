@@ -1,4 +1,6 @@
 cmake_minimum_required(VERSION 3.8)
+# unitree_sdk2 bundles a newer Cyclone DDS than ROS 2 Foxy.  Put the SDK's C
+# headers first so its C++ wrapper is compiled against the matching DDS API.
 project(go2_base)
 
 if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
@@ -19,10 +21,17 @@ find_package(std_msgs REQUIRED)
 find_package(cv_bridge REQUIRED)
 find_package(OpenCV REQUIRED)
 find_package(camera_info_manager REQUIRED)
+find_package(ament_index_cpp REQUIRED)
 
 include_directories(./include/)
 
 add_executable(go2_driver src/go2_driver.cc)
+file(REMOVE ${CMAKE_CURRENT_BINARY_DIR}/unitree_sdk_include)
+file(COPY /usr/local/include/dds
+  DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/unitree_sdk_include)
+target_include_directories(go2_driver BEFORE PRIVATE
+  ${CMAKE_CURRENT_BINARY_DIR}/unitree_sdk_include
+)
 ament_target_dependencies(go2_driver 
                           go2_msgs 
                           rclcpp 
@@ -50,7 +59,7 @@ target_link_libraries(go2_patrol unitree_sdk2)
 
 add_executable(go2_camera_publisher src/go2_camera_publisher.cpp)
 ament_target_dependencies(go2_camera_publisher
-  rclcpp sensor_msgs cv_bridge camera_info_manager
+  rclcpp sensor_msgs cv_bridge camera_info_manager ament_index_cpp
 )
 target_link_libraries(go2_camera_publisher ${OpenCV_LIBS})
 
@@ -68,7 +77,7 @@ install(TARGETS
   DESTINATION lib/${PROJECT_NAME}
 )
 
-install(DIRECTORY launch
+install(DIRECTORY launch camera
   DESTINATION share/${PROJECT_NAME}
 )
 

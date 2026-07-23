@@ -1,6 +1,9 @@
 cmake_minimum_required(VERSION 3.8)
 project(wego_2d_nav)
 
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
 if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
   add_compile_options(-Wall -Wextra -Wpedantic)
 endif()
@@ -25,7 +28,7 @@ rosidl_generate_interfaces(${PROJECT_NAME}
 )
 
 add_executable(waypoint_follow ./src/waypoint_follow.cpp ./include/wego_2d_nav/waypoint_follow.hpp)
-ament_target_dependencies(waypoint_follow 
+ament_target_dependencies(waypoint_follow
   rclcpp
   rclcpp_action
   nav2_msgs
@@ -62,6 +65,10 @@ install(TARGETS
 )
 
 install(DIRECTORY maps
+  DESTINATION share/${PROJECT_NAME}
+)
+
+install(DIRECTORY behavior_trees
   DESTINATION share/${PROJECT_NAME}
 )
 
