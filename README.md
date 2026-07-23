@@ -1,7 +1,5 @@
 # 광주 과학관 SLAM & Navigation 매뉴얼
 
-원본 PDF: `/home/wego/Downloads/광주 과학관 SLAM & Navigation.pdf`  
-작성 위치: `/home/wego/go2`  
 작성 일시: 2026-07-23 09:45 KST
 
 ## 1. NoMachine 연결 방법
