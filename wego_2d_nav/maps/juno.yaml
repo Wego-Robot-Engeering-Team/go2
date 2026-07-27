@@ -1,0 +1,7 @@
+image: /home/unitree/wego_ws/src/go2/wego_2d_nav/maps/juno.pgm
+mode: trinary
+resolution: 0.05
+origin: [-11.1, -2.85, 0]
+negate: 0
+occupied_thresh: 0.65
+free_thresh: 0.25
