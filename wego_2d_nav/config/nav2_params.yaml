@@ -16,19 +16,19 @@ amcl:
     odom_frame_id: "odom"
     robot_model_type: "differential"
     laser_model_type: "likelihood_field"
-    max_beams: 30
+    max_beams: 45
     laser_max_range: 30.0
     laser_min_range: -1.0
-    laser_likelihood_max_dist: 1.0
-    sigma_hit: 0.45
+    laser_likelihood_max_dist: 1.5
+    sigma_hit: 0.3
     beam_skip_distance: 1.0
     beam_skip_error_threshold: 0.9
     beam_skip_threshold: 0.5
     do_beamskip: false
     lambda_short: 0.1
-    max_particles: 800
-    min_particles: 300
-    pf_err: 0.2
+    max_particles: 1200
+    min_particles: 400
+    pf_err: 0.1
     pf_z: 0.99
     recovery_alpha_fast: 0.0
     recovery_alpha_slow: 0.0
