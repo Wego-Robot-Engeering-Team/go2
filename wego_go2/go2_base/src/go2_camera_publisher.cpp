@@ -6,6 +6,7 @@
 #include "cv_bridge/cv_bridge.h"
 #include "opencv4/opencv2/opencv.hpp"
 #include "camera_info_manager/camera_info_manager.hpp"
+#include "ament_index_cpp/get_package_share_directory.hpp"
 
 class ScopedCapture {
 public:
@@ -21,22 +22,30 @@ public:
     Go2CameraPulibhser()
     : Node("go2_camera_publisher")
     {
+        interface_ = declare_parameter<std::string>("interface", "eth0");
+        const auto default_pipeline =
+        "udpsrc address=230.1.1.1 port=1720 multicast-iface=" + interface_ + " "
+        "buffer-size=524288 ! "
+        "application/x-rtp, media=video, encoding-name=H264 ! "
+        "rtph264depay ! h264parse ! avdec_h264 ! videoconvert ! "
+        "video/x-raw,width=1280,height=720,format=BGR ! "
+        "appsink drop=true max-buffers=1 sync=false";
         pipeline_ = declare_parameter<std::string>(
         "pipeline",
-        "udpsrc address=230.1.1.1 port=1720 multicast-iface=enp88s0 ! \
-        application/x-rtp, media=video, encoding-name=H264 ! \
-        rtph264depay ! h264parse ! avdec_h264 ! videoconvert ! \
-        video/x-raw,width=1280,height=720,format=BGR ! appsink drop=1");
+        default_pipeline);
     
         frame_id_ = declare_parameter<std::string>("frame_id", "front_camera");
-        publish_compressed_ = declare_parameter<bool>("publish_compressed", true);
+        publish_compressed_ = declare_parameter<bool>("publish_compressed", false);
         fps_ = declare_parameter<double>("fps", 30.0);
         topic_base_ = declare_parameter<std::string>("topic_base", "/go2/camera");
         
-        camera_name_ = declare_parameter<std::string>("camera_name", "/go2/camera");
+        camera_name_ = declare_parameter<std::string>("camera_name", "narrow_stereo");
+        const auto default_camera_info_url = "file://" +
+            ament_index_cpp::get_package_share_directory("go2_base") +
+            "/camera/go2_camera_info.yaml";
         camera_info_url_ = declare_parameter<std::string>(
             "camera_info_url",
-            "file:///home/wego/camera/go2_camera_info.yaml"
+            default_camera_info_url
         );
 
         pub_raw_ = this->create_publisher<sensor_msgs::msg::Image>(
@@ -107,9 +116,10 @@ private:
     }
 
     std::string pipeline_;
+    std::string interface_;
     std::string frame_id_;
     std::string topic_base_;
-    bool publish_compressed_{true};
+    bool publish_compressed_{false};
     double fps_{30.0};
 
     std::string camera_name_;

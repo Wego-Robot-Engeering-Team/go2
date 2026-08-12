@@ -4,7 +4,7 @@
 
 #include "tf2_ros/transform_listener.h"
 #include "tf2_ros/buffer.h"
-#include "tf2_sensor_msgs/tf2_sensor_msgs.hpp"
+#include "tf2_sensor_msgs/tf2_sensor_msgs.h"
 
 #include "message_filters/subscriber.h"
 #include "message_filters/sync_policies/approximate_time.h"
@@ -39,34 +39,49 @@ public:
         qos.reliability(RMW_QOS_POLICY_RELIABILITY_BEST_EFFORT);
         qos.durability(RMW_QOS_POLICY_DURABILITY_VOLATILE);
 
-        go2_lidar_sub_ = std::make_shared<mf::Subscriber<PointCloud2>>(this, "/go2/lidar_points", qos.get_rmw_qos_profile());
-        livox_lidar_sub_ = std::make_shared<mf::Subscriber<PointCloud2>>(this, "/livox/points", qos.get_rmw_qos_profile());
+        go2_lidar_topic_ = this->declare_parameter<std::string>(
+            "go2_lidar_topic", "/go2/lidar_points");
+        secondary_lidar_topic_ = this->declare_parameter<std::string>(
+            "secondary_lidar_topic", "/lidar_points");
+
+        go2_lidar_sub_ = std::make_shared<mf::Subscriber<PointCloud2>>(
+            this, go2_lidar_topic_, qos.get_rmw_qos_profile());
+        secondary_lidar_sub_ = std::make_shared<mf::Subscriber<PointCloud2>>(
+            this, secondary_lidar_topic_, qos.get_rmw_qos_profile());
 
         using Policy = mf::sync_policies::ApproximateTime<PointCloud2, PointCloud2>;
-        sync_ = std::make_shared<mf::Synchronizer<Policy>>(Policy(14), *go2_lidar_sub_, *livox_lidar_sub_);
+        sync_ = std::make_shared<mf::Synchronizer<Policy>>(
+            Policy(14), *go2_lidar_sub_, *secondary_lidar_sub_);
         sync_->setMaxIntervalDuration(rclcpp::Duration::from_seconds(slop_sec_));
         sync_->registerCallback(std::bind(&CloudMergeNode::syncCallback, this, std::placeholders::_1, std::placeholders::_2));
 
-        raw_go2_lidar_sub_ = this->create_subscription<PointCloud2>("/go2/lidar_points", qos,
+        raw_go2_lidar_sub_ = this->create_subscription<PointCloud2>(go2_lidar_topic_, qos,
             std::bind(&CloudMergeNode::rawGo2LidarCB, this, std::placeholders::_1));
         
-        raw_livox_lidar_sub_ = this->create_subscription<PointCloud2>("/livox/points", qos,
-            std::bind(&CloudMergeNode::rawLivoxLidarCB, this, std::placeholders::_1));
+        raw_secondary_lidar_sub_ = this->create_subscription<PointCloud2>(
+            secondary_lidar_topic_, qos,
+            std::bind(&CloudMergeNode::rawSecondaryLidarCB, this, std::placeholders::_1));
 
         point_pub_ = this->create_publisher<PointCloud2>("/merged/points", qos);
 
-        RCLCPP_INFO(get_logger(), "cloud merger node started. target_frame=%s slop=%.3fs", target_frame_.c_str(), slop_sec_);
+        RCLCPP_INFO(
+            get_logger(),
+            "cloud merger node started. target_frame=%s go2=%s secondary=%s slop=%.3fs",
+            target_frame_.c_str(), go2_lidar_topic_.c_str(),
+            secondary_lidar_topic_.c_str(), slop_sec_);
     }
 
 private:
-    std::shared_ptr<mf::Subscriber<PointCloud2>> go2_lidar_sub_, livox_lidar_sub_;
+    std::shared_ptr<mf::Subscriber<PointCloud2>> go2_lidar_sub_, secondary_lidar_sub_;
     std::shared_ptr<mf::Synchronizer<mf::sync_policies::ApproximateTime<PointCloud2, PointCloud2>>> sync_;
-    rclcpp::Subscription<PointCloud2>::SharedPtr raw_go2_lidar_sub_, raw_livox_lidar_sub_;
+    rclcpp::Subscription<PointCloud2>::SharedPtr raw_go2_lidar_sub_, raw_secondary_lidar_sub_;
     rclcpp::Publisher<PointCloud2>::SharedPtr point_pub_;
 
     tf2_ros::Buffer tf_buffer_;
     tf2_ros::TransformListener tf_listener_;
     std::string target_frame_;
+    std::string go2_lidar_topic_;
+    std::string secondary_lidar_topic_;
     double slop_sec_{0.09};
     double failover_sec_{0.28};
 
@@ -79,7 +94,7 @@ private:
     {
         // Use tf2::TimePointZero (= latest available transform) so that TF lookup
         // never fails due to sensor hardware-timestamp vs ROS-clock mismatch.
-        // Static transforms (livox_frame → base_link, etc.) are always valid at any time.
+        // Static transforms (hesai_lidar → base_link, etc.) are always valid at any time.
         PointCloud2 c1_tf, c2_tf;
         try {
           auto tf1 = tf_buffer_.lookupTransform(target_frame_, c1->header.frame_id, tf2::TimePointZero);
@@ -117,7 +132,7 @@ private:
         maybePublishSingle(*msg, last_c2_time_);
     }
 
-    void rawLivoxLidarCB(const PointCloud2::SharedPtr msg)
+    void rawSecondaryLidarCB(const PointCloud2::SharedPtr msg)
     {
         last_c2_time_ = rclcpp::Time(msg->header.stamp);
         maybePublishSingle(*msg, last_c1_time_);

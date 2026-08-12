@@ -9,8 +9,8 @@
 #include "geometry_msgs/msg/vector3.hpp"
 #include "sensor_msgs/msg/imu.hpp"
 #include "nav_msgs/msg/odometry.hpp"
-#include "tf2/LinearMath/Quaternion.hpp"
-#include "tf2_geometry_msgs/tf2_geometry_msgs.hpp"
+#include "tf2/LinearMath/Quaternion.h"
+#include "tf2_geometry_msgs/tf2_geometry_msgs.h"
 #include "tf2_ros/transform_broadcaster.h"
 #include "geometry_msgs/msg/transform_stamped.hpp"
 #include "rmw/qos_profiles.h"
@@ -72,8 +72,10 @@ public:
     Go2Driver()
     : Node("go2_driver")
     {
+        // Keep velocity commands from blocking the ROS executor during packet loss.
+        this->sport_cmd_timeout_sec_ = this->declare_parameter<double>("sport_cmd_timeout_sec", 0.2);
         // init the Go2 the sports client
-        this->sport_client_.SetTimeout(10.0f);
+        this->sport_client_.SetTimeout(static_cast<float>(this->sport_cmd_timeout_sec_));
         this->sport_client_.Init();
 
         // model change init
@@ -87,6 +89,7 @@ public:
         // set for odom data
         this->odom_msg_.header.frame_id = "odom";
         this->odom_msg_.child_frame_id = "base_footprint";
+        this->publish_odom_tf_ = this->declare_parameter<bool>("publish_odom_tf", true);
 
         // tf set
         this->tf_broadcaster_ = std::make_unique<tf2_ros::TransformBroadcaster>(*this);
@@ -118,8 +121,10 @@ public:
             "go2/lidar_points",
             rclcpp::QoS(rclcpp::KeepLast(5)).reliable().durability_volatile());
 
-                // set publisher for odom and imu
-        this->state_callback_group_ = this->create_callback_group(rclcpp::CallbackGroupType::Reentrant);
+        // set publisher for odom and imu
+        this->high_state_callback_group_ = this->create_callback_group(rclcpp::CallbackGroupType::MutuallyExclusive);
+        this->low_state_callback_group_ = this->create_callback_group(rclcpp::CallbackGroupType::MutuallyExclusive);
+        this->health_callback_group_ = this->create_callback_group(rclcpp::CallbackGroupType::MutuallyExclusive);
 
         // callback group setting for command
         this->cmd_callback_group_ = this->create_callback_group(rclcpp::CallbackGroupType::MutuallyExclusive);
@@ -154,25 +159,25 @@ public:
         this->high_state_timer_ptr_ = this->create_wall_timer(
             std::chrono::milliseconds(33),
             std::bind(&Go2Driver::highStateTimer, this),
-            state_callback_group_
+            high_state_callback_group_
         );
 
         this->health_timer_ptr_ = this->create_wall_timer(
                 std::chrono::milliseconds(200),
                 std::bind(&Go2Driver::healthTimer, this),
-                state_callback_group_
+                health_callback_group_
         ); 
 
         this->low_state_timer_ptr_ = this->create_wall_timer(
             std::chrono::milliseconds(100),
             std::bind(&Go2Driver::lowStateTimer, this),
-            state_callback_group_
+            low_state_callback_group_
         );
 
         // cmd_vel subscription
         this->cmd_sub_ = this->create_subscription<geometry_msgs::msg::Twist>(
             "cmd_vel", 
-            10, 
+            rclcpp::QoS(1),
             std::bind(&Go2Driver::cmdCallback, this, _1),
             cmd_sub_options);
         
@@ -211,7 +216,9 @@ private:
     
     // set callback group
     rclcpp::CallbackGroup::SharedPtr cmd_callback_group_;
-    rclcpp::CallbackGroup::SharedPtr state_callback_group_;
+    rclcpp::CallbackGroup::SharedPtr high_state_callback_group_;
+    rclcpp::CallbackGroup::SharedPtr low_state_callback_group_;
+    rclcpp::CallbackGroup::SharedPtr health_callback_group_;
 
     // timer callback
     rclcpp::TimerBase::SharedPtr high_state_timer_ptr_;
@@ -238,6 +245,8 @@ private:
     double theta_ = 0.0;
     rclcpp::Time last_stamp_;
     bool start_flag_ = true;
+    bool publish_odom_tf_ = true;
+    double sport_cmd_timeout_sec_ = 0.2;
     
     // TF for odometry
     std::unique_ptr<tf2_ros::TransformBroadcaster> tf_broadcaster_;
@@ -253,17 +262,27 @@ private:
     int cmd_error_code_;
 
     /*********************************************callback from ros************************************************************/
-    void cmdCallback(const geometry_msgs::msg::Twist & msg)
+    void cmdCallback(geometry_msgs::msg::Twist::ConstSharedPtr msg)
     {
-        cmd_vx_ = CLAMP_SPEED_VX(msg.linear.x);
-        cmd_vy_ = CLAMP_SPEED_VY(msg.linear.y);
-        cmd_vyaw_ = CLAMP_SPEED_VYAW(msg.angular.z);
+        cmd_vx_ = CLAMP_SPEED_VX(msg->linear.x);
+        cmd_vy_ = CLAMP_SPEED_VY(msg->linear.y);
+        cmd_vyaw_ = CLAMP_SPEED_VYAW(msg->angular.z);
+        RCLCPP_INFO_THROTTLE(
+            this->get_logger(), *this->get_clock(), 1000,
+            "cmd_vel received: cmd=(%.3f, %.3f, %.3f)",
+            cmd_vx_, cmd_vy_, cmd_vyaw_);
         cmd_error_code_ = this->sport_client_.Move(cmd_vx_, cmd_vy_, cmd_vyaw_);
+        if (cmd_error_code_ != 0) {
+            RCLCPP_WARN_THROTTLE(
+                this->get_logger(), *this->get_clock(), 1000,
+                "Go2 Move failed: ret=%d cmd=(%.3f, %.3f, %.3f)",
+                cmd_error_code_, cmd_vx_, cmd_vy_, cmd_vyaw_);
+        }
     }
 
-    void oriCmdCallback(const geometry_msgs::msg::Vector3 & msg)
+    void oriCmdCallback(geometry_msgs::msg::Vector3::ConstSharedPtr msg)
     {
-        this->sport_client_.Euler(msg.x, msg.y, msg.z);
+        this->sport_client_.Euler(msg->x, msg->y, msg->z);
     }
 
     void motionCmd(const std::shared_ptr<MotionCmd::Request> req, 
@@ -474,7 +493,9 @@ private:
         _t.transform.rotation.z = _q_tf.z();
         _t.transform.rotation.w = _q_tf.w();
 
-        this->tf_broadcaster_->sendTransform(_t);
+        if (this->publish_odom_tf_) {
+            this->tf_broadcaster_->sendTransform(_t);
+        }
 
         std_msgs::msg::Int32 state_code;
         state_code.data = hs.error_code();

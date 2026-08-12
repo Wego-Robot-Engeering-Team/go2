@@ -22,12 +22,14 @@
   <depend>laser_filters</depend>
   <depend>apriltag_ros</depend>
   <depend>realsense2_camera</depend>
-  <exec_depend>aurora_test</exec_depend>
+  <exec_depend>hesai_ros_driver</exec_depend>
   <exec_depend>launch</exec_depend>
   <exec_depend>launch_ros</exec_depend>
   <exec_depend>nav2_common</exec_depend>
+  <exec_depend>nav2_rviz_plugins</exec_depend>
   <exec_depend>pointcloud_to_laserscan</exec_depend>
   <exec_depend>rviz2</exec_depend>
+  <exec_depend>slam_toolbox</exec_depend>
   <exec_depend>slamware_ros_sdk</exec_depend>
   <exec_depend>wego_2d_nav</exec_depend>
 

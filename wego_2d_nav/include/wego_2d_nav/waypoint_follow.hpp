@@ -25,7 +25,6 @@ public:
         goal_timeout_sec_ = declare_parameter<double>("goal_timeout_sec", 0.0);
         stop_on_failure_ = declare_parameter<bool>("stop_on_failure", false);
 
-        
         client_ = rclcpp_action::create_client<FollowWaypoints>(this, "follow_waypoints");
         srv_run_ = create_service<std_srvs::srv::Trigger>(
       "run_waypoints",

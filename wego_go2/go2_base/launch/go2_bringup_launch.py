@@ -11,7 +11,7 @@ def generate_launch_description():
     # Declare launch arguments
     interface_arg = DeclareLaunchArgument(
         'interface',
-        default_value='enp88s0',
+        default_value='eth0',
         description='Network interface for Unitree SDK'
     )
 
@@ -19,6 +19,12 @@ def generate_launch_description():
         'gui',
         default_value='false',
         description='Flag to enable RViz and joint_state_publisher_gui'
+    )
+    publish_odom_tf_arg = DeclareLaunchArgument(
+        'publish_odom_tf',
+        default_value='true',
+        choices=['true', 'false'],
+        description='Publish odom -> base_footprint TF from go2_driver'
     )
 
     # Get paths
@@ -38,18 +44,26 @@ def generate_launch_description():
         name='go2_driver',
         # remappings=[('/cmd_vel', '/go2/cmd_vel')],
         output='screen',
-        arguments=[LaunchConfiguration('interface')]
+        arguments=[LaunchConfiguration('interface')],
+        parameters=[{'publish_odom_tf': LaunchConfiguration('publish_odom_tf')}],
     )
 
     go2_camera_node =Node(
         package="go2_base",
         executable="go2_camera_publisher",
-        name="go2_camera_publisher"
+        name="go2_camera_publisher",
+        parameters=[{
+            'interface': LaunchConfiguration('interface'),
+            'camera_info_url': 'file://' + str(
+                go2_base_path / 'camera' / 'go2_camera_info.yaml'
+            )
+        }]
     )
 
     return LaunchDescription([
         interface_arg,
         gui_arg,
+        publish_odom_tf_arg,
         display_launch,
         go2_driver_node,
         go2_camera_node
