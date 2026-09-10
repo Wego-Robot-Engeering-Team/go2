@@ -1,0 +1,47 @@
+go2_cmd_vel_bridge:
+  ros__parameters:
+    cmd_vel_topic: /cmd_vel
+    sport_command_topic: /go2/sport_cmd
+    low_cmd_input_topic: /go2/low_cmd
+    low_cmd_output_topic: /lowcmd
+    request_topic: /api/sport/request
+    deadband: 0.01
+    command_rate_hz: 20.0
+    cmd_timeout: 0.5
+    stop_on_timeout: true
+    # false이면 timeout 시 StopMove 대신 0 속도 Move를 한 번 보낸다.
+    # Stair 보행 상태가 StopMove로 해제되는지 확인하기 위한 설정이다.
+    timeout_use_stop_move: false
+    # Navigation launch must leave the robot in a locomotion-capable state.
+    # Without BalanceStand, the sport API accepts Move requests but the Go2
+    # remains in mode 0 and Nav2 eventually aborts on its progress checker.
+    auto_balance_stand_on_start: true
+    # Start Go2 in Classic Mode after standing up.
+    auto_classic_mode_on_start: true
+    # Optional alternative: Running Mode is equivalent to holding L2 and
+    # clicking START once. Keep this false when Classic Mode is requested.
+    auto_running_mode_on_start: false
+
+go2_state_bridge:
+  ros__parameters:
+    sport_state_topic: /lf/sportmodestate
+    low_state_topic: /lowstate
+    odom_topic: /go2/odom
+    imu_topic: /go2/imu
+    joint_state_topic: /joint_states
+    foot_force_topic: /go2/foot_force
+    battery_topic: /go2/battery_state
+
+    # power_a가 이 값(A)보다 작으면 충전 중으로 판단합니다.
+    # Go2는 충전 중 power_a가 음수이며, 작은 전류 노이즈는 무시합니다.
+    charging_current_threshold: 0.1
+
+    sport_state_output_topic: /go2/sport_state
+    odom_frame: odom
+    base_frame: base_link
+    imu_frame: imu_link
+    publish_tf: true
+    rebase_odom_on_start: false
+    # Nav2/SLAM은 평면 이동 모델을 사용하므로 odom에는 x/y/yaw만 전달합니다.
+    # roll/pitch/z는 /go2/imu에 그대로 남겨 자세 모니터링에 사용할 수 있습니다.
+    planarize_odom: true
