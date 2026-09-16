@@ -129,26 +129,6 @@ def _launch_setup(context, *_args, **_kwargs):
         )
     )
 
-    # Receive XT16 UDP packets directly and publish the point cloud.
-    actions.append(
-        Node(
-            package="hesai_ros_driver",
-            executable="hesai_ros_driver_node",
-            name="hesai_ros_driver_node",
-            output="screen",
-            parameters=[
-                {
-                    "config_path": LaunchConfiguration(
-                        "hesai_config_file"
-                    )
-                }
-            ],
-            condition=IfCondition(
-                LaunchConfiguration("enable_hesai")
-            ),
-        )
-    )
-
     # Intel RealSense D435i camera and depth/colour/IMU topics.
     if LaunchConfiguration("enable_realsense").perform(context).lower() in (
         "true",
@@ -261,14 +241,6 @@ def generate_launch_description():
         ]
     )
 
-    default_hesai_config = PathJoinSubstitution(
-        [
-            FindPackageShare("hesai_ros_driver"),
-            "config",
-            "config.yaml",
-        ]
-    )
-
     default_realsense_prefix = os.environ.get(
         "REALSENSE_PREFIX",
         "/home/ktl/ktl_ws/realsense_overlay/opt/ros/humble",
@@ -311,14 +283,6 @@ def generate_launch_description():
             DeclareLaunchArgument(
                 "rebase_odom_on_start",
                 default_value="false",
-            ),
-            DeclareLaunchArgument(
-                "enable_hesai",
-                default_value="true",
-            ),
-            DeclareLaunchArgument(
-                "hesai_config_file",
-                default_value=default_hesai_config,
             ),
             DeclareLaunchArgument(
                 "use_sim_time",
