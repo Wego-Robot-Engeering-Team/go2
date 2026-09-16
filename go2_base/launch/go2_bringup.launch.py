@@ -1,4 +1,3 @@
-import os
 from pathlib import Path
 
 from launch import LaunchDescription
@@ -129,90 +128,6 @@ def _launch_setup(context, *_args, **_kwargs):
         )
     )
 
-    # Intel RealSense D435i camera and depth/colour/IMU topics.
-    if LaunchConfiguration("enable_realsense").perform(context).lower() in (
-        "true",
-        "1",
-        "yes",
-    ):
-        realsense_prefix = Path(
-            LaunchConfiguration("realsense_prefix").perform(context)
-        )
-        realsense_node = (
-            realsense_prefix
-            / "lib"
-            / "realsense2_camera"
-            / "realsense2_camera_node"
-        )
-
-        if not realsense_node.exists():
-            raise FileNotFoundError(
-                "RealSense ROS node not found: "
-                f"{realsense_node}. "
-                "Set realsense_prefix:=... or disable it with "
-                "enable_realsense:=false."
-            )
-
-        # The RealSense packages are installed in a user-local overlay on
-        # this machine rather than /opt/ros/humble. Make them discoverable
-        # by the included launch file and by the camera node's shared libs.
-        current_ament = os.environ.get("AMENT_PREFIX_PATH", "")
-        current_ld = os.environ.get("LD_LIBRARY_PATH", "")
-        current_python = os.environ.get("PYTHONPATH", "")
-        realsense_lib = str(realsense_prefix / "lib")
-        realsense_arch_lib = str(realsense_prefix / "lib" / "aarch64-linux-gnu")
-        realsense_python = str(
-            realsense_prefix / "local" / "lib" / "python3.10" / "dist-packages"
-        )
-
-        actions.extend(
-            [
-                SetEnvironmentVariable(
-                    "AMENT_PREFIX_PATH",
-                    ":".join(filter(None, [str(realsense_prefix), current_ament])),
-                ),
-                SetEnvironmentVariable(
-                    "LD_LIBRARY_PATH",
-                    ":".join(
-                        filter(None, [realsense_arch_lib, realsense_lib, current_ld])
-                    ),
-                ),
-                SetEnvironmentVariable(
-                    "PYTHONPATH",
-                    ":".join(filter(None, [realsense_python, current_python])),
-                ),
-                Node(
-                    package="realsense2_camera",
-                    executable="realsense2_camera_node",
-                    namespace="camera",
-                    name=LaunchConfiguration("realsense_camera_name"),
-                    output="screen",
-                    parameters=[
-                        {
-                            "serial_no": LaunchConfiguration("realsense_serial_no"),
-                            "enable_color": True,
-                            "enable_depth": True,
-                            # South Korea uses 60 Hz mains frequency.
-                            "rgb_camera.power_line_frequency": 2,
-                            "enable_infra": False,
-                            "enable_infra1": False,
-                            "enable_infra2": False,
-                            "enable_gyro": LaunchConfiguration(
-                                "realsense_enable_gyro"
-                            ),
-                            "enable_accel": LaunchConfiguration(
-                                "realsense_enable_accel"
-                            ),
-                            "enable_sync": True,
-                            "enable_rgbd": True,
-                            "align_depth.enable": True,
-                        }
-                    ],
-                    arguments=["--ros-args", "--log-level", "info"],
-                ),
-            ]
-        )
-
     return actions
 
 
@@ -239,11 +154,6 @@ def generate_launch_description():
             "rviz",
             "go2.rviz",
         ]
-    )
-
-    default_realsense_prefix = os.environ.get(
-        "REALSENSE_PREFIX",
-        "/home/ktl/ktl_ws/realsense_overlay/opt/ros/humble",
     )
 
     return LaunchDescription(
@@ -287,32 +197,6 @@ def generate_launch_description():
             DeclareLaunchArgument(
                 "use_sim_time",
                 default_value="false",
-            ),
-            DeclareLaunchArgument(
-                "enable_realsense",
-                default_value="true",
-                description="Start the Intel RealSense D435i camera node.",
-            ),
-            DeclareLaunchArgument(
-                "realsense_prefix",
-                default_value=default_realsense_prefix,
-                description="ROS prefix containing realsense2_camera.",
-            ),
-            DeclareLaunchArgument(
-                "realsense_camera_name",
-                default_value="d435i",
-            ),
-            DeclareLaunchArgument(
-                "realsense_serial_no",
-                default_value="_238222076093",
-            ),
-            DeclareLaunchArgument(
-                "realsense_enable_gyro",
-                default_value="true",
-            ),
-            DeclareLaunchArgument(
-                "realsense_enable_accel",
-                default_value="true",
             ),
             OpaqueFunction(function=_launch_setup),
         ]
