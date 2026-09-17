@@ -8,9 +8,8 @@ Panels:
         - /RobotModel1
         - /TF1
         - /UTLiDAR Raw Cloud1
-        - /2D Scan1
       Splitter Ratio: 0.5
-    Tree Height: 787
+    Tree Height: 907
   - Class: rviz_common/Views
     Expanded:
       - /Current View1
@@ -248,6 +247,7 @@ Visualization Manager:
           Alpha: 1
           Show Axes: false
           Show Trail: false
+          Value: true
         front_camera:
           Alpha: 1
           Show Axes: false
@@ -477,40 +477,6 @@ Visualization Manager:
       Use Fixed Frame: true
       Use rainbow: false
       Value: true
-    - Alpha: 1
-      Autocompute Intensity Bounds: true
-      Autocompute Value Bounds:
-        Max Value: 10
-        Min Value: -10
-        Value: true
-      Axis: Z
-      Channel Name: intensity
-      Class: rviz_default_plugins/LaserScan
-      Color: 255; 64; 64
-      Color Transformer: ""
-      Decay Time: 0
-      Enabled: true
-      Invert Rainbow: false
-      Max Color: 255; 255; 255
-      Max Intensity: 4096
-      Min Color: 0; 0; 0
-      Min Intensity: 0
-      Name: 2D Scan
-      Position Transformer: XYZ
-      Selectable: true
-      Size (Pixels): 3
-      Size (m): 0.019999999552965164
-      Style: Flat Squares
-      Topic:
-        Depth: 5
-        Durability Policy: Volatile
-        Filter size: 10
-        History Policy: Keep Last
-        Reliability Policy: Reliable
-        Value: /scan
-      Use Fixed Frame: true
-      Use rainbow: true
-      Value: true
   Enabled: true
   Global Options:
     Background Color: 48; 48; 48
@@ -564,18 +530,18 @@ Visualization Manager:
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: 0.5649999380111694
+      Pitch: 0.2700002193450928
       Target Frame: <Fixed Frame>
       Value: Orbit (rviz)
-      Yaw: 2.940000534057617
+      Yaw: 1.350000262260437
     Saved: ~
 Window Geometry:
   Displays:
     collapsed: false
-  Height: 1016
+  Height: 1136
   Hide Left Dock: false
   Hide Right Dock: false
-  QMainWindow State: 000000ff00000000fd0000000100000000000001560000039efc0200000004fb000000100044006900730070006c006100790073010000003d0000039e000000c900fffffffb0000000a0056006900650077007300000001d200000102000000a400fffffffb0000001e0054006f006f006c002000500072006f00700065007200740069006500730000000274000001110000005c00fffffffb0000000800540069006d00650000000368000000730000003900ffffff000005ee0000039e00000004000000040000000800000008fc0000000100000002000000010000000a0054006f006f006c00730100000000ffffffff0000000000000000
+  QMainWindow State: 000000ff00000000fd00000001000000000000015600000416fc0200000004fb000000100044006900730070006c006100790073010000003d00000416000000c900fffffffb0000000a0056006900650077007300000001d200000102000000a400fffffffb0000001e0054006f006f006c002000500072006f00700065007200740069006500730000000274000001110000005c00fffffffb0000000800540069006d00650000000368000000730000003900ffffff000005ee0000041600000004000000040000000800000008fc0000000100000002000000010000000a0054006f006f006c00730100000000ffffffff0000000000000000
   Time:
     collapsed: false
   Tool Properties:
